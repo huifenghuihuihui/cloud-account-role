@@ -136,6 +136,7 @@ const modal = ({
     }
     return <TreeNode title={item.name} key={item.id} value={item.id} dataRef={item} />;
   });
+
   const subsidiaryTreeData = authorityTreeData &&
   authorityTreeData[0] ? authorityTreeData[0].children : [];
   return (

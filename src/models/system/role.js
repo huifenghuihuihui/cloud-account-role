@@ -1,41 +1,61 @@
-/* CREATE BY YBY 2017/12/22 下午1:48:16*/
+/* CREATE BY ZC 2017/12/22 下午1:48:16*/
 import { parse } from 'qs';
 import { message } from 'antd';
-import {
-  inquireRole,
-  enable,
-  removeRole,
-  createRole,
-  inquireTree,
-  inquireCode,
-} from '../../services/system/role';
+import { queryPosts, savePost, queryRoles, queryPostCode, updateStatus } from '../../services/system/role';
 import { getSession } from '../../utils/index';
 
 export default {
   namespace: 'role',
   state: {
-    list: [],
-    loading: false,
-    currentItem: {},
-    modalVisible: false,
-    modalType: 'create',
-    modalKey: null,
-    modalError: false,
-    modalErrorValue: null,
-    searchWord: null,
-    choosedCodes: [],
-    selectedRoles: [],
-    treeData: [],
+    id: null,
+    isSuper: null,
     nodeIdList: [],
-    // 当前用户权重
-    code: null,
-    treeOption: {
-      expandedKeys: [],
-      autoExpandParent: true,
-      checkedKeys: [],
-      selectedKeys: [],
-    },
-    pagination: {
+    postCode: null,
+    dataCode: '',
+    postName: null,
+    source: null,
+    sourceId: null,
+    tenantId: null,
+    updateUser: null,
+    userCount: 0,
+    loading: false,
+    staffId: null,      // 员工Id
+    storeid: null,      // 隶属机构
+    editStoreId: null,  // 编辑机构Id
+    tenantid: null,     // 商户ID
+    title: null,        // 模态框头
+    realname: null,     // 姓名
+    gender: 1,       // 性别
+    authStores: [],     // 机构id
+    idCard: null,       // 身份证号
+    provinceName: null, // 省名称
+    cityName: null,     // 市名称
+    districtName: null, // 地区名称
+    address: null,      // 详细地址
+    mobile: null,       // 手机账户
+    post: null,         // 岗位
+    checkedStaff: [],   // 选中员工
+    checkedStaffId: [], // 选中员工id
+    checkedStaffStartId: [], // 选中可停用员工id
+    checkedStaffBlockId: [], // 选中可启用员工id
+    searchInfo: '', // 搜索信息
+    visible: false,   // 模态框显示
+    province: null,   // 省
+    city: null,       // 城市
+    district: null,   // 区县
+    deleteBtnStatus: true, // 删除按钮禁用状态
+    startBtnStatus: true,  // 启用按钮禁用状态
+    blockBtnStatus: true,  // 停用按钮禁用状态
+    status: '',     // 状态
+    provinceList: [], // 省列表
+    cityList: [],     // 城市列表
+    districtList: [], // 区县列表
+    modalKey: null,   // 模态框组件唯一key
+    authorityTreeData: [], // 机构数据
+    postList: [], // 岗位列表
+    roleList: [], // 员工信息列表
+    orderby: {},   // 排序
+    listPagination: {
       showSizeChanger: true,
       showQuickJumper: true,
       showTotal: total => `共 ${total} 条`,
@@ -53,29 +73,34 @@ export default {
           const isLogin = getSession('isLogin');
           // 请求相关信息
           if (isLogin && isLogin === 'yes') {
-            // 初始请求权限列表
             dispatch({
               type: 'queryList',
               payload: {
-                pageno: 1,
-                rowcount: 10,
+                page: {
+                  pageno: 1, // 查看第几页内容 默认1
+                  rowcount: 10, // 一页展示条数 默认10
+                  orderby: {},
+                },
+                key: null,
+                storeids: null,
+                status: '',
               },
             });
-            // 请求权限树
             dispatch({
-              type: 'queryTree',
-              payload: {},
+              type: 'queryRoles',
+              payload: {
+              },
             });
-            // 设置是否是个人中心，用来控制左侧菜单
             dispatch({
+              type: 'queryPostCode',
+              payload: {
+              },
+            });
+            dispatch({ // 设置是否是个人中心，用来控制左侧菜单
               type: 'account/updateState',
               payload: {
                 isPersonal: false,
               },
-            });
-            // 请求权重
-            dispatch({
-              type: 'queryCode',
             });
           }
         }
@@ -84,145 +109,127 @@ export default {
   },
   effects: {
     // 获取列表
-    * queryList({ payload }, { select, call, put }) {
+    * queryList({ payload }, { call, put, select }) {
       yield put({ type: 'showLoading' });
-      const paginationOld = yield select(state => state.role.pagination);
-      const res = yield call(inquireRole, parse(payload));
+      const oldPage = yield select(state => state.role.listPagination);
+      const res = yield call(queryPosts, parse(payload));
       const { data, code, page } = res.data;
       if (code === '200') {
+        console.log(data);
         yield put({
           type: 'querySuccess',
           payload: {
-            list: data || [],
-            pagination: {
-              ...paginationOld,
-              total: page.total || 0,
-              current: page.pageno || 1,
-              pageSize: page.rowcount || '10',
+            roleList: data || [],
+            listPagination: {
+              ...oldPage,
+              total: page ? page.total : 0,
+              current: page ? page.pageno : 1,
+              pageSize: page ? page.rowcount : '10',
             },
           },
         });
       }
       yield put({ type: 'hideLoading' });
     },
-    // 获取权限树列表
-    * queryTree({ payload }, { call, put }) {
-      const res = yield call(inquireTree, parse(payload));
+    // 获取岗位列表
+    * queryRoles({ payload }, { call, put }) {
+      yield put({ type: 'showLoading' });
+      const res = yield call(queryRoles);
       const { data, code } = res.data;
       if (code === '200') {
         yield put({
-          type: 'updateState',
+          type: 'querySuccess',
           payload: {
-            treeData: data || [],
+            postList: data || [],
           },
         });
       }
+      yield put({ type: 'hideLoading' });
     },
-    // 删除员工
-    * delete({ payload }, { call, put, select }) {
+    // 获取岗位列表
+    * queryPostCode({ payload }, { call, put }) {
       yield put({ type: 'showLoading' });
-      const delArr = payload.ids.split(',');
-      const pagination = yield select(state => state.role.pagination);
-      const { total, pageSize, current } = yield select(
-        state => state.role.pagination,
-      );
-      const res = yield call(removeRole, parse(payload));
-      const { code } = res.data;
+      const res = yield call(queryPostCode);
+      const { data, code } = res.data;
       if (code === '200') {
-        message.success('删除成功');
-        if (
-          (total - delArr.length) % pageSize === 0 &&
-          (total - delArr.length) / pageSize <= current &&
-          current > 1
-        ) {
-          yield put({
-            type: 'updateState',
-            payload: {
-              pagination: {
-                ...pagination,
-                current: current - 1,
-              },
-            },
-          });
-        }
-        yield put({ type: 'reload' });
+        yield put({
+          type: 'querySuccess',
+          payload: {
+            dataCode: data || '',
+          },
+        });
       }
       yield put({ type: 'hideLoading' });
     },
     // 启用停用
-    * onOff({ payload }, { call, put }) {
+    * enableOrDisable({ payload }, { call, put }) {
       yield put({ type: 'showLoading' });
-      const res = yield call(enable, parse(payload));
+      const res = yield call(updateStatus, parse(payload));
       const { code } = res.data;
       if (code === '200') {
-        if (payload.status === '1') {
-          message.success('启用成功');
-        } else if (payload.status === '0') {
-          message.success('停用成功');
-        }
+        message.success('操作成功');
         yield put({ type: 'reload' });
       }
       yield put({ type: 'hideLoading' });
     },
-    // 新增编辑
-    * add({ payload }, { call, put }) {
-      yield put({ type: 'showLoading' });
-      const res = yield call(createRole, payload);
-      const { code, msg } = res.data;
+    // 编辑
+    * editRole({ payload }, { call, put }) {
+      const res = yield call(savePost, parse(payload));
+      const { code } = res.data;
       if (code === '200') {
-        message.success('保存成功');
-        yield put({ type: 'hideModal' });
-        yield put({ type: 'reload' });
+        message.success('编辑成功');
         yield put({
-          type: 'querySuccess',
-          payload: {
-            modalError: false,
-            modalErrorValue: null,
-          },
+          type: 'queryList',
         });
-      } else if (msg) {
         yield put({
-          type: 'querySuccess',
-          payload: {
-            modalError: true,
-            modalErrorValue: msg,
-          },
+          type: 'hideModal',
         });
       }
       yield put({ type: 'hideLoading' });
     },
-    // 重新加载
-    * reload(action, { put, select }) {
-      const roleData = yield select(state => state.role);
-      // 清空选择
-      yield put({
-        type: 'updateState',
-        payload: {
-          choosedCodes: [],
-          selectedRoles: [],
-        },
-      });
-      // 重新请求列表
+    // 重载页面
+    * reload({ payload }, { put, select }) {
+      const staff = yield select(state => state.role);
       yield put({
         type: 'queryList',
         payload: {
-          pageno: roleData.pagination.current,
-          rowcount: roleData.pagination.pageSize,
+          page: {
+            pageno: staff.listPagination.current, // 查看第几页内容 默认1
+            rowcount: staff.listPagination.pageSize, // 一页展示条数 默认10
+            orderby: (Object.keys(staff.orderby).length === 0) ? {} :
+              staff.orderby,
+          },
+          key: staff.searchInfo,
+          storeids: staff.storeid,
+          status: staff.status,
         },
       });
     },
-    // 查询权重
-    * queryCode({ payload }, { call, put }) {
-      const res = yield call(inquireCode);
-      const { code, data } = res.data;
-      if (data && code === '200') {
-        yield put({
-          type: 'updateState',
-          payload: {
-            code: data,
-          },
-        });
-      }
+    // 判断状态
+    * judgeStatus({ payload }, { put, select }) {
+      const { checkedStaff } = yield select(state => state.role);
+      const startArray = [];      // 启用按钮数组
+      const blockArray = [];      //  停用按钮数组
+      const judgeStartArray = checkedStaff.filter(item => item.status === 1);
+      const judgeBlockArray = checkedStaff.filter(item => item.status === 0);
+      judgeStartArray.map((item) => {
+        startArray.push(item.id);
+        return false;
+      });
+      judgeBlockArray.map((item) => {
+        blockArray.push(item.id);
+        return false;
+      });
+      yield put({
+        type: 'updateState',
+        payload: {
+          deleteBtnStatus: !((checkedStaff.length > 0)),
+          startBtnStatus: (judgeStartArray.length === checkedStaff.length),
+          blockBtnStatus: (judgeBlockArray.length === checkedStaff.length),
+          checkedStaffStartId: startArray, // 选中可停用员工id
+          checkedStaffBlockId: blockArray, // 选中可启用员工id
+        },
+      });
     },
   },
   reducers: {
@@ -236,18 +243,18 @@ export default {
       return {
         ...state,
         ...action.payload,
-        modalVisible: true,
+        visible: true,
         modalKey: Date.parse(new Date()) / 1000,
       };
-    },
-    hideModal(state) {
-      return { ...state, modalVisible: false };
     },
     querySuccess(state, action) {
       return { ...state, ...action.payload, loading: false };
     },
     updateState(state, action) {
       return { ...state, ...action.payload };
+    },
+    hideModal(state) {
+      return { ...state, visible: false };
     },
   },
 };

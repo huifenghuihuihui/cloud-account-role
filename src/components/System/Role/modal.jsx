@@ -1,169 +1,139 @@
 import React, { PropTypes } from 'react';
-import { Form, Input, Select, Modal, Alert, Tree } from 'antd';
-import { trimParam } from '../../../utils/index';
+import { Form, Input, Modal, Select, Row, Col, Tree, message } from 'antd';
 
 const FormItem = Form.Item;
 const TreeNode = Tree.TreeNode;
-const Option = Select.Option;
 
-const nodeParent = [];
+message.config({
+  top: 300,
+  duration: 2,
+});
+
 const formItemLayout = {
   labelCol: {
     span: 6,
   },
   wrapperCol: {
-    span: 14,
+    span: 18,
   },
 };
-
 const modal = ({
-  loading,
-  visible,
-  item,
-  title,
-  modalErr,
-  modalErrValue,
-  treeData,
-  treeOption,
-  onOk,
-  onCancel,
-  onCheck,
-  postArray,
-  code,
-  form: { getFieldDecorator, validateFields, getFieldsValue, resetFields },
-}) => {
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    validateFields((errors) => {
-      if (errors) {
-        return;
+   loading,
+   title,
+   visible,
+   onSubmit,
+   onCancel,
+   postCode,
+   postName,
+   form: {
+     validateFields,
+     getFieldDecorator,
+   },
+ }) => {
+  const handleOk = () => {
+    validateFields((errors, values) => {
+      if (!errors) {
+        onSubmit(values);
       }
-      const data = {
-        ...getFieldsValue(),
-        id: item.id,
-      };
-      data.postName = trimParam(data.postName);
-      data.postCode = Number(trimParam(data.postCode)).toString();
-      onOk(data);
     });
   };
-  // 选择树方法
-  const loopTree = data =>
-    data.map((treeItem) => {
-      if (treeItem.children && treeItem.children.length) {
-        if (!nodeParent.includes(treeItem.id)) {
-          nodeParent.push(treeItem.id);
-        }
-        return (
-          <TreeNode key={treeItem.id} title={treeItem.menugroupsName}>
-            {loopTree(treeItem.children)}
-          </TreeNode>
-        );
-      }
-      if (
-        treeItem.id !== 'sa03' &&
-        treeItem.id !== 'sa04' &&
-        treeItem.id !== 'sa06'
-      ) {
-        return <TreeNode key={treeItem.id} title={treeItem.menugroupsName} />;
-      }
-      return false;
-    });
-  // 展示树过滤掉父节点
-  let nodeArray = [];
-  const filterNode = (val) => {
-    if (val) {
-      nodeArray = val;
-      nodeParent.forEach((node) => {
-        nodeArray = nodeArray.filter(key => key !== node);
-      });
-    }
-    return nodeArray;
-  };
-  // 权重选项
-  const postOptions = postArray.map((postItem) => {
-    const a =
-      postItem.code < code ? (
-        <Option value={postItem.code} key={postItem.code}>
-          {postItem.name}
-        </Option>
-      ) : null;
-    return a;
-  });
   const modalOpts = {
-    width: 600,
+    width: 915,
     title,
     visible,
-    onOk: handleSubmit,
+    cancelText: '取消',
+    okText: '确定',
+    onOk: handleOk,
     onCancel,
-    wrapClassName: 'vertical-center-modal',
     confirmLoading: loading,
     maskClosable: false,
-    afterClose: resetFields,
   };
+  const renderTreeNodes = data => data.map((item) => {
+    if (item.children) {
+      return (
+        <TreeNode title={item.menugroupsName} key={item.id} value={item.id} dataRef={item}>
+          {renderTreeNodes(item.children)}
+        </TreeNode>
+      );
+    }
+    return <TreeNode title={item.menugroupsName} key={item.id} value={item.id} dataRef={item} />;
+  });
   return (
-    <Modal {...modalOpts}>
-      <div>
-        {modalErr && <Alert message={modalErrValue} type="error" showIcon />}
-        <Form onSubmit={handleSubmit} style={{ marginTop: 8 }}>
-          <FormItem {...formItemLayout} label="角色名称">
-            {getFieldDecorator('postName', {
-              initialValue: item.postName,
-              rules: [
-                { required: true, message: '角色名称未填写', whitespace: true },
-                {
-                  pattern: /^[_\-a-zA-Z0-9\u4e00-\u9fa5]+$/,
-                  message: '请输入2到10位中文/英文/数字/下划线字符，可组合！',
-                },
-              ],
-            })(
-              <Input
-                maxLength="10"
-                // placeholder="请输入2到10位中文/英文/数字/下划线字符，可组合！"
-              />,
-            )}
-          </FormItem>
-          <FormItem {...formItemLayout} label="权重">
-            {getFieldDecorator('postCode', {
-              initialValue: item.postCode,
-              rules: [{ required: true, message: '权重不能为空' }],
-            })(<Select placeholder="请选择权重">{postOptions}</Select>)}
-          </FormItem>
-          <FormItem {...formItemLayout} label="权限">
-            {getFieldDecorator('nodeIdList', {
-              initialValue: '',
-            })(
-              <Tree
-                checkable
-                checkedKeys={filterNode(treeOption.checkedKeys)}
-                // onCheck={onCheck}
-                onCheck={(val, event) => onCheck(val, event)}
-              >
-                {loopTree(treeData)}
-              </Tree>,
-            )}
-          </FormItem>
-        </Form>
-      </div>
+    <Modal {...modalOpts} >
+      <Form >
+        <Row>
+          <Col span={11}>
+            <FormItem
+              {...formItemLayout}
+              label="角色名称"
+              hasFeedback
+            >
+              {getFieldDecorator('postName', {
+                initialValue: postName,
+                rules: [{
+                  required: true,
+                  message: '请输入姓名！',
+                }, {
+                  pattern: /^[A-Za-z\u4e00-\u9fa5]{2,10}$/,
+                  message: '请输入2到10位的中文/英文/数字/下划线字符，可组合',
+                }],
+              })(
+                <Input
+                  type="text"
+                  placeholder="请输入2到10位的中文/英文/数字/下划线字符，可组合"
+                />)}
+            </FormItem>
+            <FormItem
+              {...formItemLayout}
+              label="权重"
+            >
+              {getFieldDecorator('postCode', {
+                initialValue: postCode,
+                rules: [
+                  { required: true,
+                    message: '请选择权重',
+                  },
+                ],
+              })(<Select placeholder="请选择权重" name="postCode" >
+                <Select.Option value={1} key="1" >门店员工</Select.Option>
+                <Select.Option value={5} key="5" >门店管理员</Select.Option>
+                <Select.Option value={9} key="9" >总部管理员</Select.Option>
+              </Select>)}
+            </FormItem>
+            {/* <FormItem
+              {...formItemLayout}
+              label="权限机构"
+            >
+              {getFieldDecorator('postList', {
+                initialValue: postList,
+                rules: [
+                  {
+                    required: true,
+                    message: '请选择权限机构',
+                  },
+                ],
+              })(<Tree placeholder="请选择权限机构">
+                {console.log('加载输：')}
+                {renderTreeNodes([])}
+              </Tree>)}
+            </FormItem> */}
+          </Col>
+        </Row>
+      </Form>
     </Modal>
+
   );
 };
 
 modal.propTypes = {
-  visible: PropTypes.bool,
   form: PropTypes.object,
-  item: PropTypes.object,
+  postCode: PropTypes.number,
+  postName: PropTypes.string,
   title: PropTypes.string,
-  modalErr: PropTypes.bool,
-  modalErrValue: PropTypes.string,
+  visible: PropTypes.bool,
   loading: PropTypes.bool,
-  treeData: PropTypes.array,
-  treeOption: PropTypes.object,
-  onCheck: PropTypes.func,
-  onOk: PropTypes.func,
   onCancel: PropTypes.func,
-  postArray: PropTypes.array,
-  code: PropTypes.number,
+  onSubmit: PropTypes.func,
 };
 
 export default Form.create()(modal);

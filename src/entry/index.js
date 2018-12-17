@@ -37,6 +37,7 @@ app.model(require('../models/system/staff'));
 app.model(require('../models/system/role'));
 app.model(require('../models/system/myBusiness'));
 
+
 app.model(require('../models/payment/receiptAccount'));
 app.model(require('../models/payment/receiptChannel'));
 app.model(require('../models/payment/receiptShop'));

@@ -4,190 +4,386 @@ import { connect } from 'dva';
 import Search from '../../components/System/Role/search';
 import List from '../../components/System/Role/list';
 import Modal from '../../components/System/Role/modal';
-import { deleteArray, deleteCodes } from '../../utils/index';
 
 const Role = ({ dispatch, cloudState }) => {
   const {
-    loading,
-    list,
+    id,
+    isSuper,
     nodeIdList,
-    choosedCodes,
-    selectedRoles,
-    pagination,
-    currentItem,
-    modalVisible,
-    modalType,
-    modalError,
-    modalErrorValue,
-    treeData,
-    treeOption,
-    code,
+    postCode,
+    postName,
+    source,
+    roleId,
+    sourceId,
+    tenantId,
+    updateUser,
+    userCount,
+    visible,
+    realname,
+    gender,
+    mobile,
+    provinceName,
+    cityName,
+    districtName,
+    address,
+    post,
+    searchInfo,
+    listPagination,
+    title,
+    checkedStaff,
+    authorityTreeData,
+    postList,
+    orderby,
+    modalKey,
+    provinceList,
+    cityList,
+    districtList,
+    roleList,
+    deleteBtnStatus,
+    startBtnStatus,
+    blockBtnStatus,
+    checkedStaffId,
+    checkedStaffStartId,
+    checkedStaffBlockId,
+    storeid,
+    authStores,
+    idCard,
+    editStoreId,
+    status,
+    tenantid,
+    province,
+    city,
+    district,
+    loading,
   } = cloudState.role;
-  // 取得role页面的button权限
-  const roleButton = cloudState.account.buttonPermissions.system.set.role;
+  // 取得staff页面的button权限
+  const staffButton = cloudState.account.buttonPermissions.system.set.role;
   const searchProps = {
-    choosedCodes,
-    selectedRoles,
-    roleButton,
-    // 新增角色
+    loading,
+    searchInfo,
+    storeid,
+    status,
+    orderby,
+    checkedStaff,
+    deleteBtnStatus, // 删除按钮禁用状态
+    startBtnStatus,  // 启用按钮禁用状态
+    blockBtnStatus,  // 停用按钮禁用状态
+    checkedStaffStartId, // 选中可停用员工id
+    checkedStaffBlockId, // 选中可启用员工id
+    authorityTreeData,
+    checkedStaffId,
+    staffButton,
     onAdd() {
-      // 打开弹窗
-      dispatch({
-        type: 'role/showModal',
-        payload: {
-          modalType: 'create',
-        },
-      });
-      // loading设为false
-      dispatch({
-        type: 'role/hideLoading',
-      });
-      // 新增时清空已选权限
+      console.log('新增');
       dispatch({
         type: 'role/updateState',
         payload: {
-          treeOption: {
-            ...treeOption,
-            checkedKeys: [],
-          },
+          nodeIdList: [],
+          postCode: 1,
+          postName: '',
+          title: '新增角色',
+          userCount: 0,
+        },
+      });
+      dispatch({
+        type: 'role/showModal',
+      });
+    },
+    // 停用
+    onBlock() {
+      const checkedStaffIds = checkedStaffStartId.join(',');
+      console.log(checkedStaffIds);
+      dispatch({
+        type: 'role/enableOrDisable',
+        payload: {
+          ids: checkedStaffIds,
+          status: '0',
+        },
+      });
+      dispatch({
+        type: 'role/updateState',
+        payload: {
+          checkedStaffId: [],
+          checkedStaff: [],
+          checkedStaffStartId: [], // 选中可停用员工id
+          checkedStaffBlockId: [], // 选中可启用员工id
+          deleteBtnStatus: true,
+          startBtnStatus: true,
+          blockBtnStatus: true,
         },
       });
     },
-    // 启用、停用
-    onChangeStatus(status, array) {
+    // 启用
+    onStart() {
+      const checkedStaffIds = checkedStaffStartId.join(',');
       dispatch({
-        type: 'role/onOff',
+        type: 'role/enableOrDisable',
         payload: {
-          ids: array.join(','),
-          status,
+          ids: checkedStaffIds,
+          status: '1',
+        },
+      });
+      dispatch({
+        type: 'role/updateState',
+        payload: {
+          checkedStaffId: [],
+          checkedStaff: [],
+          checkedStaffStartId: [], // 选中可停用员工id
+          checkedStaffBlockId: [], // 选中可启用员工id
+          deleteBtnStatus: true,
+          startBtnStatus: true,
+          blockBtnStatus: true,
+
         },
       });
     },
     // 删除
-    onDelete(param) {
+    onDelete() {
+      const checkedStaffIds = checkedStaffId.join(',');
       dispatch({
-        type: 'role/delete',
+        type: 'role/deleteStaff',
         payload: {
-          ids: param.join(','),
+          ids: checkedStaffIds,
+        },
+      });
+      dispatch({
+        type: 'role/updateState',
+        payload: {
+          checkedStaffId: [],
+          checkedStaff: [],
+          checkedStaffStartId: [], // 选中可停用员工id
+          checkedStaffBlockId: [], // 选中可启用员工id
+          deleteBtnStatus: true,
+          startBtnStatus: true,
+          blockBtnStatus: true,
+        },
+      });
+    },
+    // 搜索输入
+    onSearchItem(event) {
+      dispatch({
+        type: 'role/updateState',
+        payload: {
+          searchInfo: event.target.value,
+        },
+      });
+    },
+    // 清空搜索条件
+    onClearSearch() {
+      dispatch({
+        type: 'role/updateState',
+        payload: {
+          searchInfo: '',
+        },
+      });
+    },
+    // 搜索按钮
+    onSearch() {
+      dispatch({
+        type: 'role/queryList',
+        payload: {
+          page: {
+            pageno: 1, // 查看第几页内容 默认1
+            rowcount: 10, // 一页展示条数 默认10
+            orderby: (Object.keys(orderby).length === 0) ? {} : orderby,
+          },
+          key: searchInfo,
+          storeids: storeid,
+          status,
+        },
+      });
+    },
+    onChangeStatus(event) {
+      dispatch({
+        type: 'role/queryList',
+        payload: {
+          page: {
+            pageno: 1, // 查看第几页内容 默认1
+            rowcount: 10, // 一页展示条数 默认10
+            orderby: (Object.keys(orderby).length === 0) ? {} : orderby,
+          },
+          key: searchInfo,
+          storeids: storeid,
+          status: event.target.value,
+        },
+      });
+      dispatch({
+        type: 'role/updateState',
+        payload: {
+          status: event.target.value,
         },
       });
     },
   };
   const listProps = {
+    listPagination,
+    storeid,
+    status,
+    searchInfo,
+    orderby,
+    postList,
+    roleList,
+    nodeIdList,
+    checkedStaffId,
+    staffButton,
     loading,
-    dataList: list,
-    choosedCodes,
-    code,
-    selectedRoles,
-    pagination,
-    roleButton,
-    // 分页
-    onPageChange(page) {
-      const currPage = page.pageSize === pagination.pageSize ? page.current : 1;
+    postCode,
+    postName,
+    onEdit(record) {
       dispatch({
-        type: 'role/queryList',
+        type: 'role/queryRoles',
+      });
+      dispatch({
+        type: 'role/querySuccess',
         payload: {
-          pageno: currPage,
-          rowcount: page.pageSize,
+          roleId: record.id,
+          title: '编辑角色',
+          tenantId: record.tenantId,
+          postCode: record.postCode,
+          postName: record.postName,
+          nodeIdList: record.nodeIdList || [],
+          postList: Role.postList || [],
+          idCard: '',
         },
       });
-    },
-    // 编辑
-    onEdit(item) {
       dispatch({
         type: 'role/showModal',
       });
+    },
+    onDelectStaff(idAarray) {
+      const checkedStaffIds = []; // 删除后数组
+      const checkedArray = []; // 去除后的状态数组
+      const startArray = [];      // 启用按钮数组
+      const blockArray = [];      //  停用按钮数组
+      checkedStaffId.map((item) => {
+        if (idAarray.indexOf(item) < 0) {
+          checkedStaffIds.push(item);
+        }
+        return null;
+      });
+      checkedStaff.map((item) => {
+        if (idAarray.indexOf(item.id) < 0) {
+          checkedArray.push(item);
+        }
+        return null;
+      });
+      const judgeStartArray = checkedArray.filter(item => item.status === 1);
+      const judgeBlockArray = checkedArray.filter(item => item.status === 0);
+      judgeStartArray.map((item) => {
+        startArray.push(item.id);
+        return null;
+      });
+      judgeBlockArray.map((item) => {
+        blockArray.push(item.id);
+        return null;
+      });
       dispatch({
         type: 'role/updateState',
         payload: {
-          modalType: 'update',
-          currentItem: item,
-          nodeIdList: item.nodeIdList,
-          treeOption: {
-            ...treeOption,
-            checkedKeys: item.nodeIdList,
-          },
+          deleteBtnStatus: !((checkedArray.length > 0)),
+          startBtnStatus: (judgeStartArray.length === checkedArray.length),
+          blockBtnStatus: (judgeBlockArray.length === checkedArray.length),
+          checkedStaff: checkedArray,
+          checkedStaffId: checkedStaffIds,
+          checkedStaffStartId: startArray, // 选中可停用员工id
+          checkedStaffBlockId: blockArray, // 选中可启用员工id
         },
       });
     },
-    // 勾选
-    onSelectRoles(data) {
-      let codeArray = [];
-      if (choosedCodes) {
-        codeArray = [...choosedCodes, ...data.selectedCodes];
-      } else {
-        codeArray = data.selectedCodes;
-      }
+    // 选择员工
+    onSelectStaff(selectedRows, record) {
+      const checkedArray = [];   // 状态数组
+      const checkedStaffIds = [];  // 员工Id
+      record.map((item) => {
+        checkedArray.push({ id: item.id, status: item.status });
+        checkedStaffIds.push(item.id);
+        return null;
+      });
       dispatch({
         type: 'role/updateState',
         payload: {
-          selectedRoles: [...selectedRoles, ...data.selectedRoles],
-          choosedCodes: codeArray,
+          checkedStaff: [...checkedStaff, ...checkedArray],
+          checkedStaffId: [...checkedStaffIds, ...checkedStaffId],
         },
       });
-    },
-    // 取消勾选
-    onDeleteRoles(codes) {
       dispatch({
-        type: 'role/updateState',
-        payload: {
-          selectedRoles: deleteArray(selectedRoles, codes, 'id'),
-          choosedCodes: deleteCodes(choosedCodes, codes),
-        },
+        type: 'role/judgeStatus',
       });
     },
   };
   const modalProps = {
-    postArray: cloudState.account.postArray,
-    loading,
-    item: modalType === 'create' ? {} : currentItem,
-    type: modalType,
-    title: modalType === 'create' ? '新增角色' : '编辑角色',
-    visible: modalVisible,
-    modalErr: modalError,
-    modalErrValue: modalErrorValue,
-    treeData,
-    treeOption,
+    id,
+    isSuper,
     nodeIdList,
-    code,
-    // 弹窗确认
-    onOk(data) {
-      const param = data;
-      param.nodeIdList = nodeIdList;
-      dispatch({
-        type: 'role/add',
-        payload: param,
-      });
-    },
-    // 弹窗取消
-    onCancel() {
-      dispatch({
-        type: 'role/hideModal',
-      });
+    postCode,
+    postName,
+    source,
+    sourceId,
+    tenantId,
+    updateUser,
+    userCount,
+    loading,
+    maskClosable: false,
+    visible,
+    title,
+    roleId,
+    tenantid,
+    realname,
+    mobile,
+    province,
+    city,
+    district,
+    gender,
+    provinceName,
+    cityName,
+    districtName,
+    address,
+    post,
+    storeid,
+    authStores,
+    idCard,
+    postList,
+    provinceList,
+    cityList,
+    districtList,
+    authorityTreeData,
+    editStoreId,
+    key: modalKey,
+    onChange(value) {
       dispatch({
         type: 'role/updateState',
         payload: {
-          modalError: false,
-          modalErrorValue: null,
+          authStores: value,
         },
       });
     },
-    // 勾选权限
-    onCheck(val, event) {
-      if (val.includes('sa01')) {
-        val.splice(-1, 0, 'sa03', 'sa06');
-      }
-      if (val.includes('sa02')) {
-        val.splice(-1, 0, 'sa04');
-      }
+    onSubmit(value) {
+      dispatch({
+        type: 'role/editRole',
+        payload: {
+          id: roleId,
+          tenantId: tenantid,
+          postName: value.postName,
+          postCode: value.postCode,
+        },
+      });
+    },
+    onCancel() {
       dispatch({
         type: 'role/updateState',
         payload: {
-          nodeIdList: val.concat(event.halfCheckedKeys),
-          treeOption: {
-            ...treeOption,
-            checkedKeys: val,
-          },
+          visible: false,
+        },
+      });
+    },
+    onDistrictChange(selectedKeys, info) {
+      console.log('key', selectedKeys);
+      dispatch({
+        type: 'role/updateState',
+        payload: {
+          district: selectedKeys,
+          districtName: info.props.children,
+
         },
       });
     },

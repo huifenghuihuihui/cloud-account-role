@@ -71,7 +71,7 @@ import ManagePrDistribute from './appPacks/mwCRM/ManagePrDistribute';
 import ManageManual from './appPacks/mwCRM/ManageManual';
 // 支付宝口碑
 import AlipayCard from './appPacks/mwCRM/AlipayCard';
-// 营销管理
+ // 营销管理
 import MarketActivity from './appPacks/mwCRM/MarketActivity';
 import MarketGame from './appPacks/mwCRM/MarketGame';
 import MarketEvaluate from './appPacks/mwCRM/MarketEvaluate';
@@ -136,77 +136,61 @@ import ReduceAdd from './appPacks/mwQueue/ReduceAdd';
 import OrderQueue from './appPacks/mwQueue/OrderQueue';
 import OrderAppoint from './appPacks/mwQueue/OrderAppoint';
 
+
 const routes = [
   // 基础系统
   {
     path: '/system/cloud/home',
     component: Home,
-  },
-  {
+  }, {
     path: '/system/cloud/login',
     component: Login,
-  },
-  {
+  }, {
     path: '/system/cloud/register',
     component: Registers,
-  },
-  {
+  }, {
     path: '/system/cloud/bindCheck',
     component: BindCheck,
-  },
-  {
+  }, {
     path: '/system/cloud/bindUser',
     component: BindUser,
-  },
-  {
+  }, {
     path: '/system/cloud/registerResult',
     component: RegisterResult,
-  },
-  {
+  }, {
     path: '/system/cloud/forgetPassword',
     component: ForgetPassword,
-  },
-  {
+  }, {
     path: '/system/cloud/forgetPasswordResult',
     component: ForgetPasswordResult,
-  },
-  {
+  }, {
     path: '/system/set/businessInfo',
     component: BusinessInfo,
-  },
-  {
+  }, {
     path: '/system/set/staff',
     component: Staff,
-  },
-  {
+  }, {
     path: '/system/set/role',
     component: Role,
-  },
-  {
+  }, {
     path: '/system/set/organization',
     component: Organization,
-  },
-  {
+  }, {
     path: '/system/personal/myBusiness',
     component: MyBusiness,
-  },
-  {
+  }, {
     path: '/system/personal/password',
     component: Password,
-  },
-  {
+  }, {
     path: '/system/personal/baseInfo',
     component: BaseInfo,
-  },
-  {
+  }, {
     path: '/system/set/receiptAccount',
     component: ReceiptAccount,
-  },
-  {
+  }, {
     path: '/system/set/receiptAccount/channel/:accId',
     component: ReceiptChannel,
-  },
-  {
+  }, {
     path: '/system/set/receiptAccount/shop/:accId',
     component: ReceiptShop,
   },
@@ -218,20 +202,16 @@ const routes = [
   {
     path: '/system/app/myApp',
     component: MyApp,
-  },
-  {
+  }, {
     path: '/system/app/orderRecord',
     component: OrderRecord,
-  },
-  {
+  }, {
     path: '/system/app/order/:appId',
     component: Order,
-  },
-  {
+  }, {
     path: '/system/app/order/result/:type',
     component: OrderResult,
-  },
-  {
+  }, {
     path: '/system/app/manage/:id',
     component: Manage,
   },
@@ -440,7 +420,7 @@ const routes = [
     path: '/appPacks/mwOrdain/site',
     component: Site,
   },
-  // 美味会员
+    // 美味会员
   {
     path: '/appPacks/mwCRM/manageList',
     component: ManageList,

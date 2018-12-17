@@ -15,7 +15,7 @@ export default async function request(url, options) {
   let newUrl = url;
   let responseBody = {};
   const { body, params } = options;
-  if (!(typeof body === 'string') && body) {
+  if ((!(typeof body === 'string')) && body) {
     newOptions = Object.assign({}, options, { body: getFormData(body) });
     responseBody = {
       credentials: 'same-origin',
@@ -50,9 +50,7 @@ export default async function request(url, options) {
     message.error(data.msg);
     // 登录超时，跳转至登录页
     if (data.code === '70201131') {
-      window.location = `http://${
-        window.location.host
-      }/index.html#/system/cloud/home`;
+      window.location = `http://${window.location.host}/index.html#/system/cloud/home`;
     }
   }
   return { data };
